@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>江迟懿混音接单助手</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --primary: #2dd4bf;
+    --primary-dark: #14b8a6;
+    --primary-light: #5eead4;
+    --accent: #22d3ee;
+    --bg-1: #f0fdfa;
+    --bg-2: #ecfeff;
+    --bg-3: #f0f9ff;
+    --card-bg: rgba(255, 255, 255, 0.75);
+    --card-border: rgba(45, 212, 191, 0.2);
+    --text-1: #134e4a;
+    --text-2: #5eead4;
+    --text-3: #0f766e;
+    --text-muted: #64748b;
+    --shadow: 0 4px 24px rgba(45, 212, 191, 0.12);
+    --radius: 14px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+    min-height: 100vh;
+    color: var(--text-1);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* 装饰光斑 */
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blob-1 { width: 400px; height: 400px; background: #5eead4; top: -100px; right: -100px; }
+  .blob-2 { width: 350px; height: 350px; background: #67e8f9; bottom: -80px; left: -80px; }
+  .blob-3 { width: 300px; height: 300px; background: #a7f3d0; top: 40%; left: 50%; transform: translate(-50%, -50%); }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* 顶部标题 */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-dark), var(--accent), var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+  }
+  .header p {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* 标签页 */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    width: fit-content;
+  }
+  .tab {
+    padding: 10px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.25s;
+    border: none;
+    background: transparent;
+  }
+  .tab.active {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    box-shadow: 0 2px 12px rgba(45, 212, 191, 0.35);
+  }
+  .tab:hover:not(.active) {
+    color: var(--primary-dark);
+    background: rgba(45, 212, 191, 0.08);
+  }
+
+  /* 主布局 */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 20px;
+  }
+
+  /* 卡片通用 */
+  .card {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-3);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    width: 4px;
+    height: 18px;
+    background: linear-gradient(180deg, var(--primary), var(--accent));
+    border-radius: 2px;
+  }
+
+  /* 表单元素 */
+  .form-group {
+    margin-bottom: 14px;
+  }
+  .form-group:last-child { margin-bottom: 0; }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-3);
+    margin-bottom: 6px;
+  }
+  .form-input, .form-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-1);
+    background: rgba(255,255,255,0.8);
+    transition: all 0.2s;
+    outline: none;
+  }
+  .form-input:focus, .form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15);
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* 单选按钮组 */
+  .radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .radio-item {
+    position: relative;
+  }
+  .radio-item input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .radio-item label {
+    display: block;
+    padding: 8px 16px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.7);
+    color: var(--text-3);
+    white-space: nowrap;
+  }
+  .radio-item input:checked + label {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(45,212,191,0.12), rgba(34,211,238,0.12));
+    color: var(--primary-dark);
+    font-weight: 500;
+  }
+  .radio-item label:hover {
+    border-color: var(--primary-light);
+  }
+
+  /* 开关 */
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+  .switch-label {
+    font-size: 13px;
+    color: var(--text-3);
+    font-weight: 500;
+  }
+  .switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+  }
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .switch-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #cbd5e1;
+    border-radius: 24px;
+    transition: 0.3s;
+  }
+  .switch-slider::before {
+    content: '';
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.3s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .switch input:checked + .switch-slider {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+  }
+  .switch input:checked + .switch-slider::before {
+    transform: translateX(20px);
+  }
+
+  /* 右侧价格结果 */
+  .price-card {
+    background: linear-gradient(135deg, rgba(45,212,191,0.15), rgba(34,211,238,0.15));
+    border: 1px solid rgba(45,212,191,0.3);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .price-card::before {
+    content: '';
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(94,234,212,0.3), transparent 70%);
+    top: -50px;
+    right: -50px;
+    border-radius: 50%;
+  }
+  .price-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .price-value {
+    font-size: 42px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-dark), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+  }
+  .price-value span {
+    font-size: 20px;
+  }
+
+  /* 价格明细 */
+  .price-detail {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius);
+    border: 1px solid var(--card-border);
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+  .detail-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-3);
+    margin-bottom: 12px;
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    font-size: 13px;
+    border-bottom: 1px dashed rgba(0,0,0,0.06);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-name { color: var(--text-muted); }
+  .detail-value { color: var(--text-1); font-weight: 500; }
+  .detail-value.plus { color: #059669; }
+  .detail-value.minus { color: #dc2626; }
+  .detail-final {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0 4px;
+    margin-top: 6px;
+    border-top: 2px solid rgba(45,212,191,0.2);
+  }
+  .detail-final .detail-name {
+    font-weight: 600;
+    color: var(--text-3);
+    font-size: 14px;
+  }
+  .detail-final .detail-value {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-dark), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* 按钮 */
+  .btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    box-shadow: 0 4px 14px rgba(45,212,191,0.35);
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(45,212,191,0.45);
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.8);
+    color: var(--primary-dark);
+    border: 1.5px solid var(--primary-light);
+  }
+  .btn-secondary:hover {
+    background: rgba(45,212,191,0.08);
+  }
+  .btn-danger {
+    background: rgba(239,68,68,0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239,68,68,0.2);
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .btn-danger:hover { background: rgba(239,68,68,0.15); }
+
+  /* 排单日历 */
+  .calendar {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius);
+    border: 1px solid var(--card-border);
+    padding: 18px;
+  }
+  .cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .cal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-3);
+  }
+  .cal-nav {
+    display: flex;
+    gap: 6px;
+  }
+  .cal-nav button {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    color: var(--text-3);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .cal-nav button:hover {
+    border-color: var(--primary);
+    color: var(--primary-dark);
+  }
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .cal-weekday {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 6px 0;
+  }
+  .cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    color: var(--text-1);
+  }
+  .cal-day:hover:not(.empty) {
+    background: rgba(45,212,191,0.1);
+  }
+  .cal-day.empty {
+    cursor: default;
+    color: transparent;
+  }
+  .cal-day.today {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    font-weight: 600;
+  }
+  .cal-day.has-order::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 5px;
+    height: 5px;
+    background: #f59e0b;
+    border-radius: 50%;
+  }
+  .cal-day.today.has-order::after {
+    background: white;
+  }
+  .cal-day.selected {
+    border: 2px solid var(--primary);
+    background: rgba(45,212,191,0.15);
+  }
+
+  .cal-legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* 订单列表 */
+  .order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .order-item {
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    padding: 16px;
+    transition: all 0.2s;
+  }
+  .order-item:hover {
+    box-shadow: 0 4px 16px rgba(45,212,191,0.15);
+    transform: translateY(-1px);
+  }
+  .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .order-id {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-3);
+  }
+  .order-status {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .status-pending { background: rgba(245,158,11,0.12); color: #d97706; }
+  .status-progress { background: rgba(45,212,191,0.12); color: var(--primary-dark); }
+  .status-done { background: rgba(16,185,129,0.12); color: #059669; }
+  .order-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .order-info span b {
+    color: var(--text-3);
+    font-weight: 500;
+  }
+  .order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(0,0,0,0.06);
+  }
+  .order-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary-dark);
+  }
+  .order-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+
+  /* 当日订单详情 */
+  .day-orders {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+  .day-orders-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-3);
+    margin-bottom: 8px;
+  }
+  .day-order-item {
+    padding: 8px 10px;
+    background: rgba(45,212,191,0.06);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .day-order-item:last-child { margin-bottom: 0; }
+
+  /* 提示消息 */
+  .toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(45,212,191,0.4);
+    z-index: 1000;
+    transition: transform 0.35s ease;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* 响应式 */
+  @media (max-width: 900px) {
+    .main-layout {
+      grid-template-columns: 1fr;
+    }
+    .form-row-3 {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  @media (max-width: 600px) {
+    .container { padding: 16px; }
+    .header h1 { font-size: 24px; }
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+    .tabs { width: 100%; overflow-x: auto; }
+    .price-value { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<div class="container">
+  <div class="header">
+    <h1>🎵 江迟懿混音接单助手</h1>
+    <p>报价计算 · 订单管理 · 排单日历 一站式搞定</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="calculator">💡 报价计算</button>
+    <button class="tab" data-tab="orders">📋 订单管理</button>
+    <button class="tab" data-tab="schedule">📅 排单日历</button>
+  </div>
+
+  <!-- 报价计算页 -->
+  <div class="tab-content" id="tab-calculator">
+    <div class="main-layout">
+      <div class="left-col">
+        <!-- 单主信息 -->
+        <div class="card">
+          <div class="card-title">单主信息</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">单主ID</label>
+              <input type="text" class="form-input" id="clientId" placeholder="可匹配历史订单">
+            </div>
+            <div class="form-group">
+              <label class="form-label">单主联系方式</label>
+              <input type="text" class="form-input" id="clientContact" placeholder="QQ/微信/手机号等">
+            </div>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label class="form-label">下单时间</label>
+              <input type="date" class="form-input" id="orderDate">
+            </div>
+            <div class="form-group">
+              <label class="form-label">预计开始时间</label>
+              <input type="date" class="form-input" id="startDate">
+            </div>
+            <div class="form-group">
+              <label class="form-label">截止日期（<span id="deadlineDays">25</span>天）</label>
+              <input type="date" class="form-input" id="deadlineDate" readonly style="background:#f8fafc;">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">歌曲名称 / 企划名</label>
+            <input type="text" class="form-input" id="projectName" placeholder="例如：某某歌曲翻唱后期">
+          </div>
+        </div>
+
+        <!-- 基础价格设置 -->
+        <div class="card">
+          <div class="card-title">基础价格设置</div>
+          <div class="form-group">
+            <label class="form-label">人数模式</label>
+            <div class="radio-group">
+              <div class="radio-item">
+                <input type="radio" name="peopleMode" id="mode-single" value="single" checked>
+                <label for="mode-single">单人 25R</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="peopleMode" id="mode-double" value="double">
+                <label for="mode-double">双人 35R</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="peopleMode" id="mode-group" value="group">
+                <label for="mode-group">多人（≥3人）</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-group" id="peopleCountGroup" style="display:none;">
+            <label class="form-label">参与人数</label>
+            <input type="number" class="form-input" id="peopleCount" value="3" min="3" max="100">
+            <small style="color:var(--text-muted);font-size:11px;">7人及以下 15R/人，7人以上 14R/人（仅限主声）</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">歌曲时长（分钟）</label>
+            <input type="number" class="form-input" id="songDuration" value="4" min="0.1" step="0.1">
+            <small style="color:var(--text-muted);font-size:11px;">超过5分钟，每超1分钟加价30%，不足1分钟按1分钟算</small>
+          </div>
+        </div>
+
+        <!-- 附加选项 -->
+        <div class="card">
+          <div class="card-title">附加选项</div>
+          <div class="form-group">
+            <label class="form-label">歌曲类型</label>
+            <div class="radio-group">
+              <div class="radio-item">
+                <input type="radio" name="songType" id="type-normal" value="normal" checked>
+                <label for="type-normal">普通</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="songType" id="type-chorus" value="chorus">
+                <label for="type-chorus">大合唱 ×1.2</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="songType" id="type-challenge" value="challenge">
+                <label for="type-challenge">默契挑战 ×1.2</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="songType" id="type-lyrics" value="lyrics">
+                <label for="type-lyrics">填词 ×1.2</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="songType" id="type-original" value="original">
+                <label for="type-original">原创歌曲 ×1.5</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">干音类型</label>
+            <div class="radio-group">
+              <div class="radio-item">
+                <input type="radio" name="dryType" id="dry-full" value="full" checked>
+                <label for="dry-full">整首</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="dryType" id="dry-1min" value="1min">
+                <label for="dry-1min">1分钟以内片段 ×0.7</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="dryType" id="dry-2min" value="2min">
+                <label for="dry-2min">2分钟以内片段 ×0.85</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">和声轨数</label>
+              <input type="number" class="form-input" id="harmonyTracks" value="0" min="0" max="50">
+            </div>
+            <div class="form-group">
+              <label class="form-label">和声单价</label>
+              <select class="form-select" id="harmonyPrice">
+                <option value="5">5R/轨</option>
+                <option value="6" selected>6R/轨</option>
+                <option value="7">7R/轨</option>
+                <option value="8">8R/轨</option>
+              </select>
+            </div>
+          </div>
+          <div class="switch-row">
+            <span class="switch-label">碎片式干音</span>
+            <label class="switch">
+              <input type="checkbox" id="fragmentDry">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+          <div class="form-group" id="fragmentPriceGroup" style="display:none;margin-top:8px;">
+            <label class="form-label">碎片式干音单价</label>
+            <select class="form-select" id="fragmentPrice">
+              <option value="2">2R/人</option>
+              <option value="3" selected>3R/人</option>
+              <option value="4">4R/人</option>
+              <option value="5">5R/人</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 加急与其他 -->
+        <div class="card">
+          <div class="card-title">加急与其他</div>
+          <div class="form-group">
+            <label class="form-label">加急选项</label>
+            <div class="radio-group">
+              <div class="radio-item">
+                <input type="radio" name="urgent" id="urgent-normal" value="normal" checked>
+                <label for="urgent-normal">普单 ×1</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="urgent" id="urgent-5day" value="5day">
+                <label for="urgent-5day">五天出 ×1.4</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="urgent" id="urgent-3day" value="3day">
+                <label for="urgent-3day">三天出 ×1.7</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="urgent" id="urgent-2day" value="2day">
+                <label for="urgent-2day">隔天出 ×2</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="urgent" id="urgent-1day" value="1day">
+                <label for="urgent-1day">当天出 ×2.5</label>
+              </div>
+            </div>
+            <div style="margin-top:10px;padding:10px 14px;background:rgba(45,212,191,0.08);border-radius:8px;font-size:12px;color:var(--text-3);">
+              💡 工期：普单25天 / 五天出5天 / 三天出3天 / 隔天出2天 / 当天出当天，截止日期自动计算
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:8px;">
+            <label class="form-label">备注</label>
+            <input type="text" class="form-input" id="remark" placeholder="其他特殊要求或费用说明">
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧结果 -->
+      <div class="right-col">
+        <div class="price-card">
+          <div class="price-label">预计总价</div>
+          <div class="price-value"><span>R</span><span id="totalPrice">0.00</span></div>
+        </div>
+
+        <div class="price-detail">
+          <div class="detail-title">价格明细</div>
+          <div id="priceDetails"></div>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveOrder()">
+          💾 保存为订单
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 订单管理页 -->
+  <div class="tab-content" id="tab-orders" style="display:none;">
+    <div class="card">
+      <div class="card-title">全部订单</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">搜索单主ID / 歌曲名</label>
+          <input type="text" class="form-input" id="searchOrder" placeholder="输入关键词搜索...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">筛选状态</label>
+          <select class="form-select" id="filterStatus">
+            <option value="all">全部状态</option>
+            <option value="pending">待开始</option>
+            <option value="progress">进行中</option>
+            <option value="done">已完成</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="orderListContainer"></div>
+  </div>
+
+  <!-- 排单日历页 -->
+  <div class="tab-content" id="tab-schedule" style="display:none;">
+    <div class="main-layout">
+      <div class="left-col">
+        <div class="calendar">
+          <div class="cal-header">
+            <div class="cal-title" id="calTitle">2026年8月</div>
+            <div class="cal-nav">
+              <button onclick="changeMonth(-1)">‹</button>
+              <button onclick="changeMonth(1)">›</button>
+            </div>
+          </div>
+          <div class="cal-weekdays">
+            <div class="cal-weekday">日</div>
+            <div class="cal-weekday">一</div>
+            <div class="cal-weekday">二</div>
+            <div class="cal-weekday">三</div>
+            <div class="cal-weekday">四</div>
+            <div class="cal-weekday">五</div>
+            <div class="cal-weekday">六</div>
+          </div>
+          <div class="cal-days" id="calDays"></div>
+          <div class="cal-legend">
+            <div class="legend-item">
+              <div class="legend-dot" style="background:linear-gradient(135deg,var(--primary),var(--accent));"></div>
+              今天
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#f59e0b;"></div>
+              有排单
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:rgba(45,212,191,0.3);border:2px solid var(--primary);"></div>
+              选中
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="right-col">
+        <div class="card">
+          <div class="card-title" id="selectedDateTitle">当日排单</div>
+          <div id="selectedDateOrders">
+            <div class="empty-state">
+              <div class="empty-state-icon">📅</div>
+              <div>点击日历中的日期查看排单</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">本月统计</div>
+          <div id="monthStats"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== 数据存储 ==========
+let orders = JSON.parse(localStorage.getItem('audioOrders') || '[]');
+let currentCalDate = new Date();
+let selectedDate = null;
+
+// ========== 初始化 ==========
+document.addEventListener('DOMContentLoaded', function() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('orderDate').value = today;
+  document.getElementById('startDate').value = today;
+  updateDeadline();
+  
+  calculatePrice();
+  renderOrders();
+  renderCalendar();
+  setupEventListeners();
+});
+
+// ========== 事件监听 ==========
+function setupEventListeners() {
+  // 开始日期变化时自动更新截止日期
+  document.getElementById('startDate').addEventListener('change', updateDeadline);
+  
+  // 加急选项变化时自动更新截止日期
+  document.querySelectorAll('input[name="urgent"]').forEach(radio => {
+    radio.addEventListener('change', updateDeadline);
+  });
+
+  // 标签页切换
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      const target = this.dataset.tab;
+      document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+      document.getElementById('tab-' + target).style.display = 'block';
+      if (target === 'schedule') renderCalendar();
+      if (target === 'orders') renderOrders();
+    });
+  });
+
+  // 人数模式切换
+  document.querySelectorAll('input[name="peopleMode"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      document.getElementById('peopleCountGroup').style.display = 
+        this.value === 'group' ? 'block' : 'none';
+      calculatePrice();
+    });
+  });
+
+  // 碎片式干音开关
+  document.getElementById('fragmentDry').addEventListener('change', function() {
+    document.getElementById('fragmentPriceGroup').style.display = this.checked ? 'block' : 'none';
+    calculatePrice();
+  });
+
+  // 所有输入变化时重新计算
+  const inputs = document.querySelectorAll('#tab-calculator input, #tab-calculator select');
+  inputs.forEach(input => {
+    if (input.type !== 'radio' && input.type !== 'checkbox') {
+      input.addEventListener('input', calculatePrice);
+      input.addEventListener('change', calculatePrice);
+    }
+  });
+  document.querySelectorAll('input[type="radio"]').forEach(r => {
+    r.addEventListener('change', calculatePrice);
+  });
+
+  // 搜索和筛选
+  document.getElementById('searchOrder').addEventListener('input', renderOrders);
+  document.getElementById('filterStatus').addEventListener('change', renderOrders);
+}
+
+// ========== 计算截止日期 ==========
+function updateDeadline() {
+  const startDate = document.getElementById('startDate').value;
+  if (!startDate) return;
+  
+  // 根据加急选项确定工期
+  const urgent = document.querySelector('input[name="urgent"]:checked').value;
+  const workDays = {
+    normal: 25,
+    '5day': 5,
+    '3day': 3,
+    '2day': 2,
+    '1day': 0
+  };
+  const days = workDays[urgent] !== undefined ? workDays[urgent] : 25;
+  
+  // 更新标签显示
+  document.getElementById('deadlineDays').textContent = days;
+  
+  // 计算截止日期
+  const date = new Date(startDate);
+  date.setDate(date.getDate() + days);
+  const deadline = date.toISOString().split('T')[0];
+  document.getElementById('deadlineDate').value = deadline;
+}
+
+// ========== 价格计算 ==========
+function calculatePrice() {
+  const details = [];
+  let basePrice = 0;
+  let peopleCount = 1;
+
+  // 基础价
+  const mode = document.querySelector('input[name="peopleMode"]:checked').value;
+  if (mode === 'single') {
+    basePrice = 25;
+    peopleCount = 1;
+    details.push({ name: '单人基础价', value: '+25.00', type: 'plus' });
+  } else if (mode === 'double') {
+    basePrice = 35;
+    peopleCount = 2;
+    details.push({ name: '双人基础价', value: '+35.00', type: 'plus' });
+  } else {
+    peopleCount = parseInt(document.getElementById('peopleCount').value) || 3;
+    const perPerson = peopleCount <= 7 ? 15 : 14;
+    basePrice = perPerson * peopleCount;
+    details.push({ name: `多人基础价 (${peopleCount}人×${perPerson}R)`, value: '+' + basePrice.toFixed(2), type: 'plus' });
+  }
+
+  // 和声费用
+  const harmonyTracks = parseInt(document.getElementById('harmonyTracks').value) || 0;
+  const harmonyPrice = parseInt(document.getElementById('harmonyPrice').value);
+  if (harmonyTracks > 0) {
+    const harmonyCost = harmonyTracks * harmonyPrice;
+    basePrice += harmonyCost;
+    details.push({ name: `和声 (${harmonyTracks}轨×${harmonyPrice}R)`, value: '+' + harmonyCost.toFixed(2), type: 'plus' });
+  }
+
+  // 碎片式干音
+  if (document.getElementById('fragmentDry').checked) {
+    const fragPrice = parseInt(document.getElementById('fragmentPrice').value);
+    const fragCost = fragPrice * peopleCount;
+    basePrice += fragCost;
+    details.push({ name: `碎片式干音 (${peopleCount}人×${fragPrice}R)`, value: '+' + fragCost.toFixed(2), type: 'plus' });
+  }
+
+  let subtotal = basePrice;
+
+  // 歌曲类型倍率
+  const songType = document.querySelector('input[name="songType"]:checked').value;
+  const typeMultipliers = { normal: 1, chorus: 1.2, challenge: 1.2, lyrics: 1.2, original: 1.5 };
+  const typeMult = typeMultipliers[songType];
+  if (typeMult !== 1) {
+    const typeNames = { chorus: '大合唱', challenge: '默契挑战', lyrics: '填词', original: '原创歌曲' };
+    subtotal = subtotal * typeMult;
+    details.push({ name: `${typeNames[songType]} ×${typeMult}`, value: '×' + typeMult, type: 'plus' });
+  }
+
+  // 时长加价
+  const duration = parseFloat(document.getElementById('songDuration').value) || 0;
+  if (duration > 5) {
+    const overMinutes = Math.ceil(duration - 5);
+    const durationMult = 1 + overMinutes * 0.3;
+    subtotal = subtotal * durationMult;
+    details.push({ name: `超时加价 (超${overMinutes}分钟) ×${durationMult.toFixed(1)}`, value: '×' + durationMult.toFixed(1), type: 'plus' });
+  }
+
+  // 干音类型折扣
+  const dryType = document.querySelector('input[name="dryType"]:checked').value;
+  const dryMults = { full: 1, '1min': 0.7, '2min': 0.85 };
+  const dryMult = dryMults[dryType];
+  if (dryMult !== 1) {
+    subtotal = subtotal * dryMult;
+    const dryNames = { '1min': '1分钟内片段', '2min': '2分钟内片段' };
+    details.push({ name: `${dryNames[dryType]} ×${dryMult}`, value: '×' + dryMult, type: 'minus' });
+  }
+
+  // 加急倍率
+  const urgent = document.querySelector('input[name="urgent"]:checked').value;
+  const urgentMults = { normal: 1, '5day': 1.4, '3day': 1.7, '2day': 2, '1day': 2.5 };
+  const urgentMult = urgentMults[urgent];
+  if (urgentMult !== 1) {
+    subtotal = subtotal * urgentMult;
+    const urgentNames = { '5day': '五天出', '3day': '三天出', '2day': '隔天出', '1day': '当天出' };
+    details.push({ name: `${urgentNames[urgent]} ×${urgentMult}`, value: '×' + urgentMult, type: 'plus' });
+  }
+
+  const finalPrice = subtotal;
+
+  // 渲染明细
+  const detailsHtml = details.map(d => 
+    `<div class="detail-row">
+      <span class="detail-name">${d.name}</span>
+      <span class="detail-value ${d.type}">${d.value}</span>
+    </div>`
+  ).join('');
+
+  document.getElementById('priceDetails').innerHTML = detailsHtml + 
+    `<div class="detail-final">
+      <span class="detail-name">最终总价</span>
+      <span class="detail-value">R ${finalPrice.toFixed(2)}</span>
+    </div>`;
+
+  document.getElementById('totalPrice').textContent = finalPrice.toFixed(2);
+
+  return finalPrice;
+}
+
+// ========== 保存订单 ==========
+function saveOrder() {
+  const totalPrice = calculatePrice();
+  const clientId = document.getElementById('clientId').value.trim() || '未命名客户';
+  const clientContact = document.getElementById('clientContact').value.trim() || '';
+  const orderDate = document.getElementById('orderDate').value;
+  const startDate = document.getElementById('startDate').value;
+  const deadlineDate = document.getElementById('deadlineDate').value;
+  const projectName = document.getElementById('projectName').value.trim() || '未命名企划';
+  const remark = document.getElementById('remark').value;
+
+  const order = {
+    id: 'ORD' + Date.now().toString(36).toUpperCase(),
+    clientId,
+    clientContact,
+    orderDate,
+    startDate,
+    deadlineDate,
+    projectName,
+    totalPrice,
+    status: 'pending',
+    remark,
+    createdAt: new Date().toISOString()
+  };
+
+  orders.unshift(order);
+  localStorage.setItem('audioOrders', JSON.stringify(orders));
+  
+  showToast('订单保存成功！');
+  renderOrders();
+  renderCalendar();
+}
+
+// ========== 渲染订单列表 ==========
+function renderOrders() {
+  const search = document.getElementById('searchOrder').value.toLowerCase();
+  const filter = document.getElementById('filterStatus').value;
+
+  let filtered = orders.filter(o => {
+    const matchSearch = !search || 
+      o.clientId.toLowerCase().includes(search) || 
+      o.clientContact.toLowerCase().includes(search) ||
+      o.projectName.toLowerCase().includes(search) ||
+      o.id.toLowerCase().includes(search);
+    const matchStatus = filter === 'all' || o.status === filter;
+    return matchSearch && matchStatus;
+  });
+
+  const container = document.getElementById('orderListContainer');
+  
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <div>暂无订单，去报价计算页创建第一个订单吧</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const statusMap = {
+    pending: { text: '待开始', class: 'status-pending' },
+    progress: { text: '进行中', class: 'status-progress' },
+    done: { text: '已完成', class: 'status-done' }
+  };
+
+  container.innerHTML = '<div class="order-list">' + filtered.map(o => {
+    const st = statusMap[o.status];
+    return `
+      <div class="order-item">
+        <div class="order-header">
+          <div class="order-id">${o.projectName}</div>
+          <span class="order-status ${st.class}">${st.text}</span>
+        </div>
+        <div class="order-info">
+          <span><b>订单号：</b>${o.id}</span>
+          <span><b>单主：</b>${o.clientId}</span>
+          <span><b>联系方式：</b>${o.clientContact || '未填写'}</span>
+          <span><b>开始：</b>${o.startDate || '未设定'}</span>
+          <span><b>截止：</b>${o.deadlineDate || '未设定'}</span>
+        </div>
+        <div class="order-footer">
+          <div class="order-price">R ${o.totalPrice.toFixed(2)}</div>
+          <div class="order-actions">
+            <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="updateStatus('${o.id}')">更新状态</button>
+            <button class="btn btn-danger" onclick="deleteOrder('${o.id}')">删除</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('') + '</div>';
+}
+
+// ========== 更新订单状态 ==========
+function updateStatus(id) {
+  const order = orders.find(o => o.id === id);
+  if (!order) return;
+  const statuses = ['pending', 'progress', 'done'];
+  const idx = statuses.indexOf(order.status);
+  order.status = statuses[(idx + 1) % statuses.length];
+  localStorage.setItem('audioOrders', JSON.stringify(orders));
+  renderOrders();
+  renderCalendar();
+  showToast('状态已更新');
+}
+
+// ========== 删除订单 ==========
+function deleteOrder(id) {
+  if (!confirm('确定要删除这个订单吗？')) return;
+  orders = orders.filter(o => o.id !== id);
+  localStorage.setItem('audioOrders', JSON.stringify(orders));
+  renderOrders();
+  renderCalendar();
+  showToast('订单已删除');
+}
+
+// ========== 日历 ==========
+function renderCalendar() {
+  const year = currentCalDate.getFullYear();
+  const month = currentCalDate.getMonth();
+  document.getElementById('calTitle').textContent = `${year}年${month + 1}月`;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  // 有排单的日期（按开始到截止的日期范围）
+  const orderDates = {};
+  orders.forEach(o => {
+    if (o.startDate) {
+      const start = new Date(o.startDate);
+      const end = o.deadlineDate ? new Date(o.deadlineDate) : new Date(o.startDate);
+      // 遍历从开始到截止的每一天
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        if (!orderDates[dateStr]) orderDates[dateStr] = [];
+        orderDates[dateStr].push(o);
+      }
+    }
+  });
+
+  let html = '';
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div class="cal-day empty"></div>';
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr;
+    const hasOrder = orderDates[dateStr] && orderDates[dateStr].length > 0;
+    const isSelected = selectedDate === dateStr;
+    let classes = 'cal-day';
+    if (isToday) classes += ' today';
+    if (hasOrder) classes += ' has-order';
+    if (isSelected) classes += ' selected';
+    html += `<div class="${classes}" onclick="selectDate('${dateStr}')">${d}</div>`;
+  }
+
+  document.getElementById('calDays').innerHTML = html;
+  updateMonthStats(year, month, orderDates);
+}
+
+function changeMonth(delta) {
+  currentCalDate.setMonth(currentCalDate.getMonth() + delta);
+  renderCalendar();
+}
+
+function selectDate(dateStr) {
+  selectedDate = dateStr;
+  renderCalendar();
+  
+  // 显示排单期包含该日期的所有订单
+  const dayOrders = orders.filter(o => {
+    if (!o.startDate) return false;
+    const start = new Date(o.startDate);
+    const end = o.deadlineDate ? new Date(o.deadlineDate) : new Date(o.startDate);
+    const current = new Date(dateStr);
+    return current >= start && current <= end;
+  });
+  
+  const titleEl = document.getElementById('selectedDateTitle');
+  const container = document.getElementById('selectedDateOrders');
+  
+  const dateObj = new Date(dateStr);
+  const formatted = `${dateObj.getFullYear()}年${dateObj.getMonth()+1}月${dateObj.getDate()}日`;
+  titleEl.textContent = `${formatted} 排单`;
+
+  if (dayOrders.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">🌤️</div>
+        <div>该日期暂无排单</div>
+      </div>`;
+    return;
+  }
+
+  const statusMap = { pending: '待开始', progress: '进行中', done: '已完成' };
+  container.innerHTML = dayOrders.map(o => {
+    // 计算进度
+    let progressText = '';
+    let progressBar = '';
+    if (o.startDate && o.deadlineDate) {
+      const start = new Date(o.startDate);
+      const end = new Date(o.deadlineDate);
+      const current = new Date(dateStr);
+      const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      const currentDay = Math.ceil((current - start) / (1000 * 60 * 60 * 24)) + 1;
+      const percent = Math.min(100, Math.max(0, (currentDay / totalDays) * 100));
+      progressText = `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">第 ${currentDay} 天 / 共 ${totalDays} 天</div>`;
+      progressBar = `<div style="height:4px;background:#e2e8f0;border-radius:2px;margin-top:4px;overflow:hidden;"><div style="height:100%;width:${percent}%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:2px;"></div></div>`;
+    }
+    return `
+      <div class="day-order-item" style="display:block;padding:10px 12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:500;">${o.projectName}（${o.clientId}）</span>
+          <span style="color:var(--primary-dark);font-weight:600;">R ${o.totalPrice.toFixed(2)}</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">📅 ${o.startDate || '未设定'} ~ ${o.deadlineDate || '未设定'}</div>
+        ${progressText}
+        ${progressBar}
+      </div>
+    `;
+  }).join('');
+}
+
+function updateMonthStats(year, month, orderDates) {
+  const monthOrders = orders.filter(o => {
+    if (!o.startDate) return false;
+    const d = new Date(o.startDate);
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+
+  const totalRevenue = monthOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+  const pendingCount = monthOrders.filter(o => o.status === 'pending').length;
+  const progressCount = monthOrders.filter(o => o.status === 'progress').length;
+  const doneCount = monthOrders.filter(o => o.status === 'done').length;
+
+  document.getElementById('monthStats').innerHTML = `
+    <div class="detail-row"><span class="detail-name">本月订单数</span><span class="detail-value">${monthOrders.length} 单</span></div>
+    <div class="detail-row"><span class="detail-name">预计总收入</span><span class="detail-value plus">R ${totalRevenue.toFixed(2)}</span></div>
+    <div class="detail-row"><span class="detail-name">待开始</span><span class="detail-value">${pendingCount} 单</span></div>
+    <div class="detail-row"><span class="detail-name">进行中</span><span class="detail-value">${progressCount} 单</span></div>
+    <div class="detail-row"><span class="detail-name">已完成</span><span class="detail-value">${doneCount} 单</span></div>
+  `;
+}
+
+// ========== Toast 提示 ==========
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+</script>
+
+</body>
+</html>
